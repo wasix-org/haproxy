@@ -205,6 +205,19 @@ typedef struct { } empty_t;
 #endif
 #endif
 
+/* on Linux we might have a MPTCP supporting kernel but not the header
+ * defines at compile time, so let's define it here then
+ */
+#if defined(__linux__) && !defined(IPPROTO_MPTCP)
+#define IPPROTO_MPTCP 262
+#endif
+/* if we don't know at all about the MPTCP implementation on the platform
+ * we'll check the config and stop eventually if 'mptcp' is enabled:
+ */
+#ifndef IPPROTO_MPTCP
+#define IPPROTO_MPTCP 0
+#endif
+
 /* If IPv6 is supported, define IN6_IS_ADDR_V4MAPPED() if missing. */
 #if defined(IPV6_TCLASS) && !defined(IN6_IS_ADDR_V4MAPPED)
 #define IN6_IS_ADDR_V4MAPPED(a) \
