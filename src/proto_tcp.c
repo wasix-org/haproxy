@@ -91,7 +91,48 @@ struct protocol proto_tcpv4 = {
 	.nb_receivers   = 0,
 };
 
+struct protocol proto_mptcpv4 = {
+	.name           = "mptcp4",
+
+	/* connection layer */
+	.ctrl_type      = SOCK_STREAM,
+	.listen         = tcp_bind_listener,
+	.enable         = tcp_enable_listener,
+	.disable        = tcp_disable_listener,
+	.add            = default_add_listener,
+	.unbind         = default_unbind_listener,
+	.suspend        = default_suspend_listener,
+	.resume         = default_resume_listener,
+	.accept_conn    = sock_accept_conn,
+	.ctrl_init      = sock_conn_ctrl_init,
+	.ctrl_close     = sock_conn_ctrl_close,
+	.connect        = tcp_connect_server,
+	.drain          = sock_drain,
+	.check_events   = sock_check_events,
+	.ignore_events  = sock_ignore_events,
+
+	/* binding layer */
+	.rx_suspend     = tcp_suspend_receiver,
+	.rx_resume      = tcp_resume_receiver,
+
+	/* address family */
+	.fam            = &proto_fam_inet4,
+
+	/* socket layer */
+	.proto_type     = PROTO_TYPE_MPSTREAM,
+	.sock_type      = SOCK_STREAM,
+	.sock_prot      = IPPROTO_MPTCP,
+	.rx_enable      = sock_enable,
+	.rx_disable     = sock_disable,
+	.rx_unbind      = sock_unbind,
+	.rx_listening   = sock_accepting_conn,
+	.default_iocb   = sock_accept_iocb,
+	.receivers      = LIST_HEAD_INIT(proto_mptcpv4.receivers),
+	.nb_receivers   = 0,
+};
+
 INITCALL1(STG_REGISTER, protocol_register, &proto_tcpv4);
+INITCALL1(STG_REGISTER, protocol_register, &proto_mptcpv4);
 
 /* Note: must not be declared <const> as its list will be overwritten */
 struct protocol proto_tcpv6 = {
@@ -134,7 +175,48 @@ struct protocol proto_tcpv6 = {
 	.nb_receivers   = 0,
 };
 
+struct protocol proto_mptcpv6 = {
+	.name           = "mptcp6",
+
+	/* connection layer */
+	.ctrl_type      = SOCK_STREAM,
+	.listen         = tcp_bind_listener,
+	.enable         = tcp_enable_listener,
+	.disable        = tcp_disable_listener,
+	.add            = default_add_listener,
+	.unbind         = default_unbind_listener,
+	.suspend        = default_suspend_listener,
+	.resume         = default_resume_listener,
+	.accept_conn    = sock_accept_conn,
+	.ctrl_init      = sock_conn_ctrl_init,
+	.ctrl_close     = sock_conn_ctrl_close,
+	.connect        = tcp_connect_server,
+	.drain          = sock_drain,
+	.check_events   = sock_check_events,
+	.ignore_events  = sock_ignore_events,
+
+	/* binding layer */
+	.rx_suspend     = tcp_suspend_receiver,
+	.rx_resume      = tcp_resume_receiver,
+
+	/* address family */
+	.fam            = &proto_fam_inet6,
+
+	/* socket layer */
+	.proto_type     = PROTO_TYPE_MPSTREAM,
+	.sock_type      = SOCK_STREAM,
+	.sock_prot      = IPPROTO_MPTCP,
+	.rx_enable      = sock_enable,
+	.rx_disable     = sock_disable,
+	.rx_unbind      = sock_unbind,
+	.rx_listening   = sock_accepting_conn,
+	.default_iocb   = sock_accept_iocb,
+	.receivers      = LIST_HEAD_INIT(proto_mptcpv6.receivers),
+	.nb_receivers   = 0,
+};
+
 INITCALL1(STG_REGISTER, protocol_register, &proto_tcpv6);
+INITCALL1(STG_REGISTER, protocol_register, &proto_mptcpv6);
 
 /* Binds ipv4/ipv6 address <local> to socket <fd>, unless <flags> is set, in which
  * case we try to bind <remote>. <flags> is a 2-bit field consisting of :
