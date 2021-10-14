@@ -192,24 +192,24 @@ int session_accept_fd(struct connection *cli_conn)
 
 	/* Adjust some socket options */
 	if (l->rx.addr.ss_family == AF_INET || l->rx.addr.ss_family == AF_INET6) {
-		setsockopt(cfd, IPPROTO_TCP, TCP_NODELAY, (char *) &one, sizeof(one));
+		setsockopt(cfd, cli_conn->ctrl->sock_prot, TCP_NODELAY, (char *) &one, sizeof(one));
 
 		if (p->options & PR_O_TCP_CLI_KA) {
 			setsockopt(cfd, SOL_SOCKET, SO_KEEPALIVE, (char *) &one, sizeof(one));
 
 #ifdef TCP_KEEPCNT
 			if (p->clitcpka_cnt)
-				setsockopt(cfd, IPPROTO_TCP, TCP_KEEPCNT, &p->clitcpka_cnt, sizeof(p->clitcpka_cnt));
+				setsockopt(cfd, cli_conn->ctrl->sock_prot, TCP_KEEPCNT, &p->clitcpka_cnt, sizeof(p->clitcpka_cnt));
 #endif
 
 #ifdef TCP_KEEPIDLE
 			if (p->clitcpka_idle)
-				setsockopt(cfd, IPPROTO_TCP, TCP_KEEPIDLE, &p->clitcpka_idle, sizeof(p->clitcpka_idle));
+				setsockopt(cfd, cli_conn->ctrl->sock_prot, TCP_KEEPIDLE, &p->clitcpka_idle, sizeof(p->clitcpka_idle));
 #endif
 
 #ifdef TCP_KEEPINTVL
 			if (p->clitcpka_intvl)
-				setsockopt(cfd, IPPROTO_TCP, TCP_KEEPINTVL, &p->clitcpka_intvl, sizeof(p->clitcpka_intvl));
+				setsockopt(cfd, cli_conn->ctrl->sock_prot, TCP_KEEPINTVL, &p->clitcpka_intvl, sizeof(p->clitcpka_intvl));
 #endif
 		}
 
@@ -221,9 +221,9 @@ int session_accept_fd(struct connection *cli_conn)
 			/* we just want to reduce the current MSS by that value */
 			int mss;
 			socklen_t mss_len = sizeof(mss);
-			if (getsockopt(cfd, IPPROTO_TCP, TCP_MAXSEG, &mss, &mss_len) == 0) {
+			if (getsockopt(cfd, cli_conn->ctrl->sock_prot, TCP_MAXSEG, &mss, &mss_len) == 0) {
 				mss += l->maxseg; /* remember, it's < 0 */
-				setsockopt(cfd, IPPROTO_TCP, TCP_MAXSEG, &mss, sizeof(mss));
+				setsockopt(cfd, cli_conn->ctrl->sock_prot, TCP_MAXSEG, &mss, sizeof(mss));
 			}
 		}
 #endif
