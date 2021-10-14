@@ -187,7 +187,7 @@ int sock_create_server_socket(struct connection *conn)
 			ns = __objt_server(conn->target)->netns;
 	}
 #endif
-	return my_socketat(ns, conn->dst->ss_family, SOCK_STREAM, 0);
+	return my_socketat(ns, conn->dst->ss_family, SOCK_STREAM, conn->ctrl->sock_prot);
 }
 
 /* Enables receiving on receiver <rx> once already bound. */
