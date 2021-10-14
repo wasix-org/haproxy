@@ -342,7 +342,7 @@ int tcp_connect_server(struct connection *conn, int flags)
 	}
 
 	if ((fcntl(fd, F_SETFL, O_NONBLOCK)==-1) ||
-	    (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one)) == -1)) {
+	    (setsockopt(fd, conn->ctrl->sock_prot, TCP_NODELAY, &one, sizeof(one)) == -1)) {
 		qfprintf(stderr,"Cannot set client socket to non blocking mode.\n");
 		close(fd);
 		conn->err_code = CO_ER_SOCK_ERR;
@@ -363,17 +363,17 @@ int tcp_connect_server(struct connection *conn, int flags)
 
 #ifdef TCP_KEEPCNT
 		if (be->srvtcpka_cnt)
-			setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &be->srvtcpka_cnt, sizeof(be->srvtcpka_cnt));
+			setsockopt(fd, conn->ctrl->sock_prot, TCP_KEEPCNT, &be->srvtcpka_cnt, sizeof(be->srvtcpka_cnt));
 #endif
 
 #ifdef TCP_KEEPIDLE
 		if (be->srvtcpka_idle)
-			setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &be->srvtcpka_idle, sizeof(be->srvtcpka_idle));
+			setsockopt(fd, conn->ctrl->sock_prot, TCP_KEEPIDLE, &be->srvtcpka_idle, sizeof(be->srvtcpka_idle));
 #endif
 
 #ifdef TCP_KEEPINTVL
 		if (be->srvtcpka_intvl)
-			setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &be->srvtcpka_intvl, sizeof(be->srvtcpka_intvl));
+			setsockopt(fd, conn->ctrl->sock_prot, TCP_KEEPINTVL, &be->srvtcpka_intvl, sizeof(be->srvtcpka_intvl));
 #endif
 	}
 
@@ -445,7 +445,7 @@ int tcp_connect_server(struct connection *conn, int flags)
 		else {
 #ifdef IP_BIND_ADDRESS_NO_PORT
 			static THREAD_LOCAL int bind_address_no_port = 1;
-			setsockopt(fd, IPPROTO_IP, IP_BIND_ADDRESS_NO_PORT, (const void *) &bind_address_no_port, sizeof(int));
+			setsockopt(fd, conn->ctrl->sock_prot, IP_BIND_ADDRESS_NO_PORT, (const void *) &bind_address_no_port, sizeof(int));
 #endif
 			ret = tcp_bind_socket(fd, flags, &src->source_addr, conn->src);
 			if (ret != 0)
@@ -484,18 +484,18 @@ int tcp_connect_server(struct connection *conn, int flags)
 	    ((flags & CONNECT_DELACK_SMART_CONNECT ||
 	      (flags & CONNECT_HAS_DATA) || conn->send_proxy_ofs) &&
 	     (be->options2 & PR_O2_SMARTCON)))
-                setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &zero, sizeof(zero));
+                setsockopt(fd, conn->ctrl->sock_prot, TCP_QUICKACK, &zero, sizeof(zero));
 #endif
 
 #ifdef TCP_USER_TIMEOUT
 	/* there is not much more we can do here when it fails, it's still minor */
 	if (srv && srv->tcp_ut)
-		setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &srv->tcp_ut, sizeof(srv->tcp_ut));
+		setsockopt(fd, conn->ctrl->sock_prot, TCP_USER_TIMEOUT, &srv->tcp_ut, sizeof(srv->tcp_ut));
 #endif
 
 	if (use_fastopen) {
 #if defined(TCP_FASTOPEN_CONNECT)
-                setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, &one, sizeof(one));
+                setsockopt(fd, conn->ctrl->sock_prot, TCP_FASTOPEN_CONNECT, &one, sizeof(one));
 #endif
 	}
 	if (global.tune.server_sndbuf)
