@@ -1029,6 +1029,12 @@ struct sockaddr_storage *str2sa_range(const char *str, int *port, int *low, int 
 		proto_type = PROTO_TYPE_STREAM;
 		ctrl_type = SOCK_STREAM;
 	}
+	else if (strncmp(str2, "mptcp4@", 7) == 0) {
+		str2 += 7;
+		ss.ss_family = AF_INET;
+		proto_type = PROTO_TYPE_MPSTREAM;
+		ctrl_type = SOCK_STREAM;
+	}
 	else if (strncmp(str2, "udp4@", 5) == 0) {
 		str2 += 5;
 		ss.ss_family = AF_INET;
@@ -1039,6 +1045,12 @@ struct sockaddr_storage *str2sa_range(const char *str, int *port, int *low, int 
 		str2 += 5;
 		ss.ss_family = AF_INET6;
 		proto_type = PROTO_TYPE_STREAM;
+		ctrl_type = SOCK_STREAM;
+	}
+	else if (strncmp(str2, "mptcp6@", 7) == 0) {
+		str2 += 7;
+		ss.ss_family = AF_INET6;
+		proto_type = PROTO_TYPE_MPSTREAM;
 		ctrl_type = SOCK_STREAM;
 	}
 	else if (strncmp(str2, "udp6@", 5) == 0) {
