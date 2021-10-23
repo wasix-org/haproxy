@@ -281,7 +281,7 @@ static enum act_return tcp_exec_action_silent_drop(struct act_rule *rule, struct
 	/* re-enable quickack if it was disabled to ack all data and avoid
 	 * retransmits from the client that might trigger a real reset.
 	 */
-	setsockopt(conn->handle.fd, IPPROTO_TCP, TCP_QUICKACK, &one, sizeof(one));
+	setsockopt(conn->handle.fd, conn->ctrl->sock_prot, TCP_QUICKACK, &one, sizeof(one));
 #endif
 	/* lingering must absolutely be disabled so that we don't send a
 	 * shutdown(), this is critical to the TCP_REPAIR trick. When no stream
@@ -296,7 +296,7 @@ static enum act_return tcp_exec_action_silent_drop(struct act_rule *rule, struct
 	HA_ATOMIC_OR(&fdtab[conn->handle.fd].state, FD_LINGER_RISK);
 
 #ifdef TCP_REPAIR
-	if (setsockopt(conn->handle.fd, IPPROTO_TCP, TCP_REPAIR, &one, sizeof(one)) == 0) {
+	if (setsockopt(conn->handle.fd, conn->ctrl->sock_prot, TCP_REPAIR, &one, sizeof(one)) == 0) {
 		/* socket will be quiet now */
 		goto out;
 	}
