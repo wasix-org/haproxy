@@ -714,7 +714,8 @@ int tcp_bind_listener(struct listener *listener, char *errmsg, int errlen)
 
 #if defined(TCP_MAXSEG)
 	if (listener->maxseg > 0) {
-		if (setsockopt(fd, IPPROTO_TCP, TCP_MAXSEG,
+		//if (setsockopt(fd, IPPROTO_TCP, TCP_MAXSEG,
+		if (setsockopt(fd, listener->rx.proto->sock_prot, TCP_MAXSEG,
 			       &listener->maxseg, sizeof(listener->maxseg)) == -1) {
 			chunk_appendf(msg, "%scannot set MSS to %d", msg->data ? ", " : "", listener->maxseg);
 			err |= ERR_WARN;
@@ -730,10 +731,10 @@ int tcp_bind_listener(struct listener *listener, char *errmsg, int errlen)
 		else
 			defaultmss = sock_inet6_tcp_maxseg_default;
 
-		getsockopt(fd, IPPROTO_TCP, TCP_MAXSEG, &tmpmaxseg, &len);
+		getsockopt(fd, listener->rx.proto->sock_prot, TCP_MAXSEG, &tmpmaxseg, &len);
 		if (defaultmss > 0 &&
 		    tmpmaxseg != defaultmss &&
-		    setsockopt(fd, IPPROTO_TCP, TCP_MAXSEG, &defaultmss, sizeof(defaultmss)) == -1) {
+		    setsockopt(fd, listener->rx.proto->sock_prot, TCP_MAXSEG, &defaultmss, sizeof(defaultmss)) == -1) {
 			chunk_appendf(msg, "%scannot set MSS to %d", msg->data ? ", " : "", defaultmss);
 			err |= ERR_WARN;
 		}
@@ -741,32 +742,32 @@ int tcp_bind_listener(struct listener *listener, char *errmsg, int errlen)
 #endif
 #if defined(TCP_USER_TIMEOUT)
 	if (listener->tcp_ut) {
-		if (setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT,
+		if (setsockopt(fd, listener->rx.proto->sock_prot, TCP_USER_TIMEOUT,
 			       &listener->tcp_ut, sizeof(listener->tcp_ut)) == -1) {
 			chunk_appendf(msg, "%scannot set TCP User Timeout", msg->data ? ", " : "");
 			err |= ERR_WARN;
 		}
 	} else
-		setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &zero,
+		setsockopt(fd, listener->rx.proto->sock_prot, TCP_USER_TIMEOUT, &zero,
 		    sizeof(zero));
 #endif
 #if defined(TCP_DEFER_ACCEPT)
 	if (listener->options & LI_O_DEF_ACCEPT) {
 		/* defer accept by up to one second */
 		int accept_delay = 1;
-		if (setsockopt(fd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &accept_delay, sizeof(accept_delay)) == -1) {
+		if (setsockopt(fd, listener->rx.proto->sock_prot, TCP_DEFER_ACCEPT, &accept_delay, sizeof(accept_delay)) == -1) {
 			chunk_appendf(msg, "%scannot enable DEFER_ACCEPT", msg->data ? ", " : "");
 			err |= ERR_WARN;
 		}
 	} else
-		setsockopt(fd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &zero,
+		setsockopt(fd, listener->rx.proto->sock_prot, TCP_DEFER_ACCEPT, &zero,
 		    sizeof(zero));
 #endif
 #if defined(TCP_FASTOPEN)
 	if (listener->options & LI_O_TCP_FO) {
 		/* TFO needs a queue length, let's use the configured backlog */
 		int qlen = listener_backlog(listener);
-		if (setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &qlen, sizeof(qlen)) == -1) {
+		if (setsockopt(fd, listener->rx.proto->sock_prot, TCP_FASTOPEN, &qlen, sizeof(qlen)) == -1) {
 			chunk_appendf(msg, "%scannot enable TCP_FASTOPEN", msg->data ? ", " : "");
 			err |= ERR_WARN;
 		}
@@ -777,9 +778,9 @@ int tcp_bind_listener(struct listener *listener, char *errmsg, int errlen)
 		/* Only disable fast open if it was enabled, we don't want
 		 * the kernel to create a fast open queue if there's none.
 		 */
-		if (getsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &qlen, &len) == 0 &&
+		if (getsockopt(fd, listener->rx.proto->sock_prot, TCP_FASTOPEN, &qlen, &len) == 0 &&
 		    qlen != 0) {
-			if (setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN, &zero,
+			if (setsockopt(fd, listener->rx.proto->sock_prot, TCP_FASTOPEN, &zero,
 			    sizeof(zero)) == -1) {
 				chunk_appendf(msg, "%scannot disable TCP_FASTOPEN", msg->data ? ", " : "");
 				err |= ERR_WARN;
@@ -811,9 +812,9 @@ int tcp_bind_listener(struct listener *listener, char *errmsg, int errlen)
 #endif
 #if defined(TCP_QUICKACK)
 	if (listener->options & LI_O_NOQUICKACK)
-		setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &zero, sizeof(zero));
+		setsockopt(fd, listener->rx.proto->sock_prot, TCP_QUICKACK, &zero, sizeof(zero));
 	else
-		setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &one, sizeof(one));
+		setsockopt(fd, listener->rx.proto->sock_prot, TCP_QUICKACK, &one, sizeof(one));
 #endif
 
 	/* the socket is ready */
