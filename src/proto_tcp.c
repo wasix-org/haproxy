@@ -425,11 +425,16 @@ int tcp_connect_server(struct connection *conn, int flags)
 
 	if ((fcntl(fd, F_SETFL, O_NONBLOCK)==-1) ||
 	    (setsockopt(fd, conn->ctrl->sock_prot, TCP_NODELAY, &one, sizeof(one)) == -1)) {
-		qfprintf(stderr,"Cannot set client socket to non blocking mode.\n");
+		qfprintf(stderr,"Cannot set TCP_NODELAY on client socket.\n");
+#if 0
+		/* failing to set TCP_NODELAY isn't good but not fatal.
+		 * Also Linux (5.14) MPTCP doesn't support it yet.
+		 */
 		close(fd);
 		conn->err_code = CO_ER_SOCK_ERR;
 		conn->flags |= CO_FL_ERROR;
 		return SF_ERR_INTERNAL;
+#endif
 	}
 
 	if (master == 1 && (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)) {
