@@ -478,6 +478,8 @@ int sock_get_old_sockets(const char *unixsocket)
 		socklen = sizeof(val);
 		if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &val, &socklen) == 0 && val == SOCK_DGRAM)
 			xfer_sock->options |= SOCK_XFER_OPT_DGRAM;
+		else if (getsockopt(fd, SOL_SOCKET, SO_PROTOCOL, &val, &socklen) == 0 && val == IPPROTO_MPTCP)
+			xfer_sock->options |= SOCK_XFER_OPT_MPSTRM;
 
 #if defined(IPV6_V6ONLY)
 		/* keep only the v6only flag depending on what's currently
