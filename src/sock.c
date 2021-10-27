@@ -547,6 +547,8 @@ int sock_find_compatible_fd(const struct receiver *rx)
 
 	if (rx->proto->proto_type == PROTO_TYPE_DGRAM)
 		options |= SOCK_XFER_OPT_DGRAM;
+	else if (rx->proto->proto_type == PROTO_TYPE_MPSTREAM)
+		options |= SOCK_XFER_OPT_MPSTRM;
 
 	if (rx->settings->options & RX_O_FOREIGN)
 		options |= SOCK_XFER_OPT_FOREIGN;

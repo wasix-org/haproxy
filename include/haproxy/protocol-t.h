@@ -52,6 +52,7 @@ struct connection;
 enum proto_type {
 	PROTO_TYPE_STREAM,      /* streaming protocol (like TCP) */
 	PROTO_TYPE_DGRAM,       /* datagram protocol (like UDP) */
+	PROTO_TYPE_MPSTREAM,    /* multi-path streaming protocol (like MPTCP) */
 	PROTO_NUM_TYPES         /* must be the last one */
 };
 
