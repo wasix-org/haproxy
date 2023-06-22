@@ -320,10 +320,10 @@ int stream_buf_available(void *arg)
 {
 	struct stream *s = arg;
 
-	if (!s->req.buf.size && !s->req.pipe && s->scf->flags & SC_FL_NEED_BUFF &&
+	if (!s->req.buf.size && !s->scb->sedesc->iobuf.pipe && s->scf->flags & SC_FL_NEED_BUFF &&
 	    b_alloc(&s->req.buf))
 		sc_have_buff(s->scf);
-	else if (!s->res.buf.size && !s->res.pipe && s->scb->flags & SC_FL_NEED_BUFF &&
+	else if (!s->res.buf.size && !s->scf->sedesc->iobuf.pipe && s->scb->flags & SC_FL_NEED_BUFF &&
 		 b_alloc(&s->res.buf))
 		sc_have_buff(s->scb);
 	else
@@ -630,12 +630,6 @@ void stream_free(struct stream *s)
 		 */
 		sess_change_server(s, NULL);
 	}
-
-	if (s->req.pipe)
-		put_pipe(s->req.pipe);
-
-	if (s->res.pipe)
-		put_pipe(s->res.pipe);
 
 	/* We may still be present in the buffer wait queue */
 	if (LIST_INLIST(&s->buffer_wait.list))
@@ -3491,7 +3485,7 @@ static int stats_dump_full_strm_to_buffer(struct stconn *sc, struct stream *strm
 			     "      an_exp=%s buf=%p data=%p o=%u p=%u i=%u size=%u\n",
 			     &strm->req,
 			     strm->req.flags, strm->req.analysers,
-			     strm->req.pipe ? strm->req.pipe->data : 0,
+			     strm->scb->sedesc->iobuf.pipe ? strm->scb->sedesc->iobuf.pipe->data : 0,
 			     strm->req.to_forward, strm->req.total,
 			     strm->req.analyse_exp ?
 			     human_time(TICKS_TO_MS(strm->req.analyse_exp - now_ms),
@@ -3522,7 +3516,7 @@ static int stats_dump_full_strm_to_buffer(struct stconn *sc, struct stream *strm
 			     "      an_exp=%s buf=%p data=%p o=%u p=%u i=%u size=%u\n",
 			     &strm->res,
 			     strm->res.flags, strm->res.analysers,
-			     strm->res.pipe ? strm->res.pipe->data : 0,
+			     strm->scf->sedesc->iobuf.pipe ? strm->scf->sedesc->iobuf.pipe->data : 0,
 			     strm->res.to_forward, strm->res.total,
 			     strm->res.analyse_exp ?
 			     human_time(TICKS_TO_MS(strm->res.analyse_exp - now_ms),
