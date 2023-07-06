@@ -5820,6 +5820,45 @@ uint32_t parse_line(char *in, char *out, size_t *outlen, char **args, int *nbarg
 }
 #undef EMIT_CHAR
 
+/* Read the first line of a file from <path> into the trash buffer. The
+ * trailing CR and LF if any are stripped. Returns 0 on success, with
+ * trash.data value reflecting the number of bytes returned in the trash,
+ * otherwise non-zero, typically a positive value on path construction
+ * failure, or a negative one on I/O error. The trash is always reset
+ * before proceeding.
+ */
+int read_line_to_trash(const char *path_fmt, ...)
+{
+	char path[MAXPATHLEN + 1];
+	va_list args;
+	FILE *file;
+	int ret;
+
+	chunk_reset(&trash);
+
+	va_start(args, path_fmt);
+	ret = vsnprintf(path, sizeof(path), path_fmt, args);
+	va_end(args);
+	if (ret >= sizeof(path))
+		return ret;
+
+	ret = -1;
+	file = fopen(path, "r");
+	if (file) {
+		if (fgets(trash.area, trash.size, file)) {
+			ret = strlen(trash.area);
+			while (ret && (trash.area[ret - 1] == '\r' || trash.area[ret - 1] == '\n'))
+				ret--;
+			trash.area[ret] = 0;
+			trash.data = ret;
+			ret = 0; // success
+		}
+		fclose(file);
+	}
+
+	return ret;
+}
+
 /* This is used to sanitize an input line that's about to be used for error reporting.
  * It will adjust <line> to print approximately <width> chars around <pos>, trying to
  * preserve the beginning, with leading or trailing "..." when the line is truncated.
