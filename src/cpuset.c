@@ -149,6 +149,30 @@ int ha_cpuset_size()
 #endif
 }
 
+/* Detects CPUs that are bound to the current process. Returns the number of
+ * CPUs detected or 0 if the detection failed.
+ */
+int ha_cpuset_detect_bound(struct hap_cpuset *set)
+{
+	ha_cpuset_zero(set);
+
+	/* detect bound CPUs depending on the OS's API */
+	if (0
+#if defined(__linux__)
+	    || sched_getaffinity(0, sizeof(set->cpuset), &set->cpuset) != 0
+#elif defined(__FreeBSD__)
+	    || cpuset_getaffinity(CPU_LEVEL_CPUSET, CPU_WHICH_PID, -1, sizeof(set->cpuset), &set->cpuset) != 0
+#else
+	    || 1 // unhandled platform
+#endif
+	    ) {
+		/* detection failed */
+		return 0;
+	}
+
+	return ha_cpuset_count(set);
+}
+
 /* Parse cpu sets. Each CPU set is either a unique number between 0 and
  * ha_cpuset_size() - 1 or a range with two such numbers delimited by a dash
  * ('-'). Each CPU set can be a list of unique numbers or ranges separated by
