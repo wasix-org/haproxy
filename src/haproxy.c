@@ -2242,6 +2242,9 @@ static void init(int argc, char **argv)
 
 	/* Now detect how CPUs are arranged */
 	cpu_detect_topology();
+
+	/* detect the optimal thread-groups and nbthreads if not set */
+	thread_detect_count();
 #endif
 
 	/* Note: global.nbthread will be initialized as part of this call */
