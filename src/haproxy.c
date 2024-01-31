@@ -3966,6 +3966,7 @@ int main(int argc, char **argv)
 	/* when multithreading we need to let only the thread 0 handle the signals */
 	haproxy_unblock_signals();
 
+	ha_notice("Configuration loaded.\n");
 	/* Finally, start the poll loop for the first thread */
 	run_thread_poll_loop(&ha_thread_info[0]);
 
