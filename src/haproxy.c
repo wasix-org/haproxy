@@ -829,7 +829,7 @@ void mworker_reload(int hardreload)
 	struct mworker_proc *child;
 	struct per_thread_deinit_fct *ptdf;
 
-	ha_notice("Reloading HAProxy%s\n", hardreload?" (hard-reload)":"");
+	ha_notice("Reloading HAProxy%s...\n", hardreload?" (hard-reload)":"");
 
 	/* close the poller FD and the thread waker pipe FD */
 	list_for_each_entry(ptdf, &per_thread_deinit_list, list)
@@ -2114,13 +2114,14 @@ static void init(int argc, char **argv)
 		exit(result ? 0 : 1);
 	}
 
+
 	if (global.mode & MODE_MWORKER) {
 		struct mworker_proc *tmproc;
 
 		setenv("HAPROXY_MWORKER", "1", 1);
 
 		if (getenv("HAPROXY_MWORKER_REEXEC") == NULL) {
-
+			ha_notice("Starting HAProxy version '%s' from path '%s'\n", haproxy_version, get_exec_path());
 			tmproc = mworker_proc_new();
 			if (!tmproc) {
 				ha_alert("Cannot allocate process structures.\n");
@@ -2132,6 +2133,8 @@ static void init(int argc, char **argv)
 			proc_self = tmproc;
 
 			LIST_APPEND(&proc_list, &tmproc->list);
+		} else {
+			ha_notice("Reloading HAProxy version '%s' from path '%s'\n", haproxy_version, get_exec_path());
 		}
 
 		tmproc = mworker_proc_new();
@@ -2870,6 +2873,7 @@ void deinit(void)
 		return;
 
 	/* At this point the listeners state is weird:
+
 	 *  - most listeners are still bound and referenced in their protocol
 	 *  - some might be zombies that are not in their proto anymore, but
 	 *    still appear in their proxy's listeners with a valid FD.

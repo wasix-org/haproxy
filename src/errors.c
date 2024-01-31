@@ -413,29 +413,10 @@ static void print_message(int use_usermsgs_ctx, const char *label, const char *f
 	free(msg);
 }
 
-static void print_message_args(int use_usermsgs_ctx, const char *label, const char *fmt, ...)
-{
-	va_list argp;
-	va_start(argp, fmt);
-	print_message(use_usermsgs_ctx, label, fmt, argp);
-	va_end(argp);
-}
-
 /*
  * Display a notice with the happroxy version and executable path when the
  * first message is emitted in starting mode.
  */
-static void warn_exec_path()
-{
-	if (!(warned & WARN_EXEC_PATH) && (global.mode & MODE_STARTING)) {
-		const char *path = get_exec_path();
-
-		warned |= WARN_EXEC_PATH;
-		print_message_args(0, "NOTICE", "haproxy version is %s\n", haproxy_version);
-		if (path)
-			print_message_args(0, "NOTICE", "path to executable is %s\n", path);
-	}
-}
 
 /*
  * Displays the message on stderr with the pid.
@@ -444,7 +425,6 @@ void ha_alert(const char *fmt, ...)
 {
 	va_list argp;
 
-	warn_exec_path();
 	va_start(argp, fmt);
 	print_message(1, "ALERT", fmt, argp);
 	va_end(argp);
@@ -460,7 +440,6 @@ void ha_warning(const char *fmt, ...)
 	warned |= WARN_ANY;
 	HA_ATOMIC_INC(&tot_warnings);
 
-	warn_exec_path();
 	va_start(argp, fmt);
 	print_message(1, "WARNING", fmt, argp);
 	va_end(argp);
