@@ -2039,8 +2039,7 @@ static void init(int argc, char **argv)
 	    && (getenv("HAPROXY_MWORKER_REEXEC") != NULL)) {
 
 		if (global.mode & MODE_MWORKER) {
-			atexit_flag = 1;
-			atexit(reexec_on_failure);
+			atexit_flag = 0;
 		} else if (global.mode & MODE_MWORKER_WAIT) {
 			atexit_flag = 1;
 			atexit(exit_on_waitmode_failure);
@@ -2115,11 +2114,86 @@ static void init(int argc, char **argv)
 		exit(result ? 0 : 1);
 	}
 
+	if (global.mode & MODE_MWORKER) {
+		struct mworker_proc *tmproc;
+
+		setenv("HAPROXY_MWORKER", "1", 1);
+
+		if (getenv("HAPROXY_MWORKER_REEXEC") == NULL) {
+
+			tmproc = mworker_proc_new();
+			if (!tmproc) {
+				ha_alert("Cannot allocate process structures.\n");
+				exit(EXIT_FAILURE);
+			}
+			tmproc->options |= PROC_O_TYPE_MASTER; /* master */
+			tmproc->pid = pid;
+			tmproc->timestamp = start_date.tv_sec;
+			proc_self = tmproc;
+
+			LIST_APPEND(&proc_list, &tmproc->list);
+		}
+
+		tmproc = mworker_proc_new();
+		if (!tmproc) {
+			ha_alert("Cannot allocate process structures.\n");
+			exit(EXIT_FAILURE);
+		}
+		tmproc->options |= PROC_O_TYPE_WORKER; /* worker */
+
+		if (mworker_cli_sockpair_new(tmproc, 0) < 0) {
+			exit(EXIT_FAILURE);
+		}
+
+		LIST_APPEND(&proc_list, &tmproc->list);
+	}
+
+	/* In mworkerV3 mode, the configuration is never parsed by the master,
+	 * but is parsed by the worker, the master only configure the master CLI */
+
+	{
+	int worker;
+	struct mworker_proc *child;
+
+	worker = fork();
+	switch (worker) {
+
+		case -1:
+			ha_alert("[%s.main()] Cannot fork.\n", argv[0]);
+			exit(EXIT_FAILURE);
+		case 0:
+			/* in child */
+			global.mode &= ~(MODE_MWORKER|MODE_MWORKER_WAIT);
+			break;
+		default:
+			/* in parent */
+			global.mode |= MODE_MWORKER_WAIT;
+
+
+			ha_notice("New worker (%d) forked\n", worker);
+			/* find the right mworker_proc */
+			list_for_each_entry(child, &proc_list, list) {
+				if (child->reloads == 0 &&
+				    child->options & PROC_O_TYPE_WORKER &&
+				    child->pid == -1) {
+					child->timestamp = date.tv_sec;
+					child->pid = worker;
+					child->version = strdup(haproxy_version);
+					/* at this step the fd is bound for the worker, set it to -1 so
+					 * it could be close in case of errors in mworker_cleanup_proc() */
+					child->ipc_fd[1] = -1;
+					break;
+				}
+			}
+	}
+
+	}
 	/* in wait mode, we don't try to read the configuration files */
 	if (!(global.mode & MODE_MWORKER_WAIT)) {
 		char *env_cfgfiles = NULL;
 		int env_err = 0;
 
+		ha_notice("Loading configuration...\n");
 		/* handle cfgfiles that are actually directories */
 		cfgfiles_expand_directories();
 
@@ -2181,39 +2255,6 @@ static void init(int argc, char **argv)
 		setenv("HAPROXY_CFGFILES", env_cfgfiles, 1);
 		free(env_cfgfiles);
 
-	}
-	if (global.mode & MODE_MWORKER) {
-		struct mworker_proc *tmproc;
-
-		setenv("HAPROXY_MWORKER", "1", 1);
-
-		if (getenv("HAPROXY_MWORKER_REEXEC") == NULL) {
-
-			tmproc = mworker_proc_new();
-			if (!tmproc) {
-				ha_alert("Cannot allocate process structures.\n");
-				exit(EXIT_FAILURE);
-			}
-			tmproc->options |= PROC_O_TYPE_MASTER; /* master */
-			tmproc->pid = pid;
-			tmproc->timestamp = start_date.tv_sec;
-			proc_self = tmproc;
-
-			LIST_APPEND(&proc_list, &tmproc->list);
-		}
-
-		tmproc = mworker_proc_new();
-		if (!tmproc) {
-			ha_alert("Cannot allocate process structures.\n");
-			exit(EXIT_FAILURE);
-		}
-		tmproc->options |= PROC_O_TYPE_WORKER; /* worker */
-
-		if (mworker_cli_sockpair_new(tmproc, 0) < 0) {
-			exit(EXIT_FAILURE);
-		}
-
-		LIST_APPEND(&proc_list, &tmproc->list);
 	}
 
 	if (global.mode & MODE_MWORKER_WAIT) {
@@ -3707,25 +3748,6 @@ int main(int argc, char **argv)
 					snprintf(pidstr, sizeof(pidstr), "%d\n", ret);
 					DISGUISE(write(pidfd, pidstr, strlen(pidstr)));
 				}
-				if (global.mode & MODE_MWORKER) {
-					struct mworker_proc *child;
-
-					ha_notice("New worker (%d) forked\n", ret);
-					/* find the right mworker_proc */
-					list_for_each_entry(child, &proc_list, list) {
-						if (child->reloads == 0 &&
-						    child->options & PROC_O_TYPE_WORKER &&
-						    child->pid == -1) {
-							child->timestamp = date.tv_sec;
-							child->pid = ret;
-							child->version = strdup(haproxy_version);
-							/* at this step the fd is bound for the worker, set it to -1 so
-							 * it could be close in case of errors in mworker_cleanup_proc() */
-							child->ipc_fd[1] = -1;
-							break;
-						}
-					}
-				}
 			}
 
 		} else {
@@ -3769,7 +3791,7 @@ int main(int argc, char **argv)
 					setenv("HAPROXY_LOAD_SUCCESS", "1", 1);
 					ha_notice("Loading success.\n");
 					proc_self->failedreloads = 0; /* reset the number of failure */
-					mworker_reexec_waitmode();
+//					mworker_reexec_waitmode();
 				}
 				/* should never get there */
 				exit(EXIT_FAILURE);
