@@ -349,10 +349,6 @@ int cli_io_handler_show_ring(struct appctx *appctx)
 	size_t len, cnt;
 	int ret;
 
-	/* FIXME: Don't watch the other side !*/
-	if (unlikely(sc_opposite(sc)->flags & SC_FL_SHUT_DONE))
-		return 1;
-
 	HA_RWLOCK_WRLOCK(RING_LOCK, &ring->lock);
 	LIST_DEL_INIT(&appctx->wait_entry);
 	HA_RWLOCK_WRUNLOCK(RING_LOCK, &ring->lock);

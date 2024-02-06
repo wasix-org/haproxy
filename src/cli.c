@@ -1262,12 +1262,7 @@ static void cli_release_handler(struct appctx *appctx)
 static int cli_io_handler_show_env(struct appctx *appctx)
 {
 	struct show_env_ctx *ctx = appctx->svcctx;
-	struct stconn *sc = appctx_sc(appctx);
 	char **var = ctx->var;
-
-	/* FIXME: Don't watch the other side !*/
-	if (unlikely(sc_opposite(sc)->flags & SC_FL_SHUT_DONE))
-		return 1;
 
 	chunk_reset(&trash);
 
@@ -1298,15 +1293,10 @@ static int cli_io_handler_show_env(struct appctx *appctx)
  */
 static int cli_io_handler_show_fd(struct appctx *appctx)
 {
-	struct stconn *sc = appctx_sc(appctx);
 	struct show_fd_ctx *fdctx = appctx->svcctx;
 	uint match = fdctx->show_mask;
 	int fd = fdctx->fd;
 	int ret = 1;
-
-	/* FIXME: Don't watch the other side !*/
-	if (unlikely(sc_opposite(sc)->flags & SC_FL_SHUT_DONE))
-		goto end;
 
 	chunk_reset(&trash);
 
