@@ -943,10 +943,15 @@ size_t cli_snd_buf(struct appctx *appctx, struct buffer *buf, size_t count, unsi
 			len = b_getline(buf, ret, count, str, b_room(&appctx->inbuf) - 1);
 
 		if (!len) {
-			if (!b_room(buf) || (count > b_room(&appctx->inbuf) - 1) || (flags & CO_SFL_LAST_DATA)) {
-				b_reset(&appctx->inbuf);
-				applet_set_eos(appctx);
+			if (!b_room(buf) || (count > b_room(&appctx->inbuf) - 1)) {
+				cli_err(appctx, "command or payload too big.\n");
 				applet_set_error(appctx);
+				b_reset(&appctx->inbuf);
+			}
+			else if ((flags & CO_SFL_LAST_DATA)) {
+				applet_set_error(appctx);
+				b_reset(&appctx->inbuf);
+				appctx->st0 = CLI_ST_END;
 			}
 			break;
 		}
@@ -1150,6 +1155,11 @@ static void cli_io_handler(struct appctx *appctx)
 					appctx->t->expire = TICK_ETERNITY;
 					appctx->st0 = CLI_ST_PROMPT;
 				}
+				if (applet_fl_test(appctx, APPCTX_FL_ERR_PENDING)) {
+					appctx->st0 = CLI_ST_END;
+					continue;
+				}
+
 				break;
 
 			case CLI_ST_CALLBACK: /* use custom pointer */
