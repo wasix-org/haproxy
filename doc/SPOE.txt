@@ -8,7 +8,8 @@
 
 
 
-  WARNING: The SPOE is now deprecated and will be removed in future version.
+  WARNING: The SPOE is now deprecated and unmaintained. No support must
+           be expected anymore on it. It will be removed in future version.
 
 
 SUMMARY
