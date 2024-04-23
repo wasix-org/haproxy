@@ -223,11 +223,13 @@ void __trace(enum trace_level level, uint64_t mask, struct trace_source *src,
                         const void *a1, const void *a2, const void *a3, const void *a4),
              const struct ist msg)
 {
-	const void *lockon_ptr;
-	struct ist ist_func = ist(func);
-	char tnum[4];
 	struct ist line[12];
 	int words = 0;
+	char tnum[4];
+	struct ist ist_func = ist(func);
+
+#ifndef __wasi__
+	const void *lockon_ptr;
 	int ret;
 
 	lockon_ptr = NULL;
@@ -240,6 +242,7 @@ void __trace(enum trace_level level, uint64_t mask, struct trace_source *src,
 			goto end;
 		return;
 	}
+#endif
 
 	/* log the logging location truncated to 10 chars from the right so that
 	 * the line number and the end of the file name are there.
@@ -290,6 +293,17 @@ void __trace(enum trace_level level, uint64_t mask, struct trace_source *src,
 		line[words++] = msg;
 	}
 
+#ifdef __wasi__
+	printf("TRACE: ");
+	for (int i = 0; i < words; ++i) {
+		char *buf = (char*)malloc(line[i].len + 1);
+		memcpy((void*)buf, (void*)line[i].ptr, line[i].len);
+		buf[line[i].len] = 0;
+		printf("%s", buf);
+		free(buf);
+	}
+	printf("\n");
+#else
 	if (src->sink)
 		sink_write(src->sink, LOG_HEADER_NONE, 0, line, words);
 
@@ -303,6 +317,7 @@ void __trace(enum trace_level level, uint64_t mask, struct trace_source *src,
 		HA_ATOMIC_STORE(&src->lockon_ptr, NULL);
 		HA_ATOMIC_STORE(&src->state, TRACE_STATE_WAITING);
 	}
+#endif
 }
 
 /* this callback may be used when no output modification is desired */

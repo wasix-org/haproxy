@@ -52,11 +52,18 @@
  * order as in the __trace() function, which is only called if (src)->state is
  * not TRACE_STATE_STOPPED. This is the only case where arguments are evaluated.
  */
+#ifdef __wasi__
+#define _trace(level, mask, src, args...)				\
+	do {								\
+		__trace(level, mask, src, ##args);		\
+	} while (0)
+#else
 #define _trace(level, mask, src, args...)				\
 	do {								\
 		if (unlikely((src)->state != TRACE_STATE_STOPPED))	\
 			__trace(level, mask, src, ##args);		\
 	} while (0)
+#endif
 
 /* For convenience, TRACE() alone uses the file's default TRACE_LEVEL, most
  * likely TRACE_LEVEL_DEVELOPER, though the other explicit variants specify
