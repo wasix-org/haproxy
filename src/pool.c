@@ -515,7 +515,11 @@ static void pool_evict_last_items(struct pool_head *pool, struct pool_cache_head
 {
 	struct pool_cache_item *item;
 	struct pool_item *pi, *head = NULL;
+#ifdef __wasi__
+	void* caller = NULL;
+#else
 	void *caller = __builtin_return_address(0);
+#endif
 	uint released = 0;
 	uint cluster = 0;
 	uint to_free_max;
@@ -839,7 +843,11 @@ void pool_gc(struct pool_head *pool_ctx)
 void *__pool_alloc(struct pool_head *pool, unsigned int flags)
 {
 	void *p = NULL;
+#ifdef __wasi__
+	void* caller = NULL;
+#else
 	void *caller = __builtin_return_address(0);
+#endif
 
 	if (unlikely(pool_debugging & POOL_DBG_FAIL_ALLOC))
 		if (!(flags & POOL_F_NO_FAIL) && mem_should_fail(pool))
@@ -884,7 +892,11 @@ void *__pool_alloc(struct pool_head *pool, unsigned int flags)
  */
 void __pool_free(struct pool_head *pool, void *ptr)
 {
-	const void *caller = __builtin_return_address(0);
+#ifdef __wasi__
+	void* caller = NULL;
+#else
+	void *caller = __builtin_return_address(0);
+#endif
 
 	/* we'll get late corruption if we refill to the wrong pool or double-free */
 	POOL_DEBUG_CHECK_MARK(pool, ptr, caller);

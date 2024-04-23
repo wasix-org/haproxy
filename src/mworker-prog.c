@@ -97,7 +97,11 @@ int mworker_ext_launch_all()
 
 				/* setgid / setuid */
 				if (child->gid != -1) {
-					if (getgroups(0, NULL) > 0 && setgroups(0, NULL) == -1)
+					if (
+#ifndef __wasi__
+						getgroups(0, NULL) > 0 &&
+#endif
+						setgroups(0, NULL) == -1)
 						ha_warning("[%s.main()] Failed to drop supplementary groups. Using 'gid'/'group'"
 							" without 'uid'/'user' is generally useless.\n", child->command[0]);
 

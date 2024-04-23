@@ -1,0 +1,8 @@
+#! /usr/bin/env sh
+
+wasmer run --net \
+  --mapdir /conf:./examples \
+  --mapdir /app:/Users/arshia/repos/wasmer/php-local/wordpress-wasmer-starter/app \
+  haproxy.wasm \
+  -- \
+  -f /conf/php-fpm-wasix.cfg

@@ -314,6 +314,7 @@ int sock_unix_bind_receiver(struct receiver *rx, char **errmsg)
 	 * While it is known not to be portable on every OS, it's still useful
 	 * where it works. We also don't change permissions on abstract sockets.
 	 */
+#ifndef __wasi__ // no unix socket support in wasix anyway
 	if (!ext && path[0] &&
 	    (((rx->settings->ux.uid != -1 || rx->settings->ux.gid != -1) &&
 	      (chown(tempname, rx->settings->ux.uid, rx->settings->ux.gid) == -1)) ||
@@ -322,6 +323,7 @@ int sock_unix_bind_receiver(struct receiver *rx, char **errmsg)
 		memprintf(errmsg, "cannot change UNIX socket ownership (%s)", strerror(errno));
 		goto err_unlink_temp;
 	}
+#endif
 
 	/* Point of no return: we are ready, we'll switch the sockets. We don't
 	 * fear losing the socket <path> because we have a copy of it in

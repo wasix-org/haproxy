@@ -61,6 +61,16 @@
 		*(typeof(pool)*)(((char *)__i) + __p->size) = __p;	\
 	} while (0)
 
+#ifdef __wasi__
+# define POOL_DEBUG_RESET_MARK(pool, item)				\
+	do {								\
+		typeof(pool) __p = (pool);				\
+		typeof(item) __i = (item);				\
+		if (likely(!(pool_debugging & POOL_DBG_TAG)))		\
+			break;						\
+		*(typeof(pool)*)(((char *)__i) + __p->size) = NULL; \
+	} while (0)
+#else
 # define POOL_DEBUG_RESET_MARK(pool, item)				\
 	do {								\
 		typeof(pool) __p = (pool);				\
@@ -69,6 +79,7 @@
 			break;						\
 		*(typeof(pool)*)(((char *)__i) + __p->size) = __builtin_return_address(0); \
 	} while (0)
+#endif
 
 # define POOL_DEBUG_CHECK_MARK(pool, item, caller)				\
 	do {								\

@@ -3250,7 +3250,11 @@ static void set_identity(const char *program_name)
 	int from_uid __maybe_unused = geteuid();
 
 	if (global.gid) {
-		if (getgroups(0, NULL) > 0 && setgroups(0, NULL) == -1)
+		if (
+#ifndef __wasi__
+			getgroups(0, NULL) > 0 &&
+#endif
+			setgroups(0, NULL) == -1)
 			ha_warning("[%s.main()] Failed to drop supplementary groups. Using 'gid'/'group'"
 				   " without 'uid'/'user' is generally useless.\n", program_name);
 
@@ -3565,6 +3569,7 @@ int main(int argc, char **argv)
 	if ((global.mode & (MODE_MWORKER|MODE_DAEMON)) == 0) {
 
 		/* chroot if needed */
+#ifndef __wasi__
 		if (global.chroot != NULL) {
 			if (chroot(global.chroot) == -1 || chdir("/") == -1) {
 				ha_alert("[%s.main()] Cannot chroot(%s).\n", argv[0], global.chroot);
@@ -3574,6 +3579,7 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 		}
+#endif
 	}
 
 	if (nb_oldpids && !(global.mode & MODE_MWORKER_WAIT))
@@ -3798,6 +3804,7 @@ int main(int argc, char **argv)
 			}
 		}
 
+#ifndef __wasi__
 		/* Must chroot and setgid/setuid in the children */
 		/* chroot if needed */
 		if (global.chroot != NULL) {
@@ -3809,6 +3816,7 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 		}
+#endif
 
 		ha_free(&global.chroot);
 		set_identity(argv[0]);

@@ -311,3 +311,67 @@ typedef struct { } empty_t;
  *  c-basic-offset: 8
  * End:
  */
+
+#ifdef __wasi__
+
+struct cmsghdr {
+#if __LONG_MAX > 0x7fffffff && __BYTE_ORDER == __BIG_ENDIAN
+	int __pad1;
+#endif
+	socklen_t cmsg_len;
+#if __LONG_MAX > 0x7fffffff && __BYTE_ORDER == __LITTLE_ENDIAN
+	int __pad1;
+#endif
+	int cmsg_level;
+	int cmsg_type;
+};
+
+#define __CMSG_LEN(cmsg) (((cmsg)->cmsg_len + sizeof(long) - 1) & ~(long)(sizeof(long) - 1))
+#define __CMSG_NEXT(cmsg) ((unsigned char *)(cmsg) + __CMSG_LEN(cmsg))
+#define __MHDR_END(mhdr) ((unsigned char *)(mhdr)->msg_control + (mhdr)->msg_controllen)
+
+#define CMSG_DATA(cmsg) ((unsigned char *) (((struct cmsghdr *)(cmsg)) + 1))
+#define CMSG_NXTHDR(mhdr, cmsg) ((cmsg)->cmsg_len < sizeof (struct cmsghdr) || \
+	__CMSG_LEN(cmsg) + sizeof(struct cmsghdr) >= __MHDR_END(mhdr) - (unsigned char *)(cmsg) \
+	? 0 : (struct cmsghdr *)__CMSG_NEXT(cmsg))
+#define CMSG_FIRSTHDR(mhdr) ((size_t) (mhdr)->msg_controllen >= sizeof (struct cmsghdr) ? (struct cmsghdr *) (mhdr)->msg_control : (struct cmsghdr *) 0)
+
+#define CMSG_ALIGN(len) (((len) + sizeof (size_t) - 1) & (size_t) ~(sizeof (size_t) - 1))
+#define CMSG_SPACE(len) (CMSG_ALIGN (len) + CMSG_ALIGN (sizeof (struct cmsghdr)))
+#define CMSG_LEN(len)   (CMSG_ALIGN (sizeof (struct cmsghdr)) + (len))
+
+#define SCM_RIGHTS      0x01
+#define SCM_CREDENTIALS 0x02
+
+#define PRIO_MIN (-20)
+#define PRIO_MAX 20
+
+#define PRIO_PROCESS 0
+#define PRIO_PGRP    1
+#define PRIO_USER    2
+
+#define RLIM_INFINITY (~0ULL)
+#define RLIM_SAVED_CUR RLIM_INFINITY
+#define RLIM_SAVED_MAX RLIM_INFINITY
+
+#define RLIMIT_CPU     0
+#define RLIMIT_FSIZE   1
+#define RLIMIT_DATA    2
+#define RLIMIT_STACK   3
+#define RLIMIT_CORE    4
+#define RLIMIT_RSS     5
+#define RLIMIT_NPROC   6
+#define RLIMIT_NOFILE  7
+#define RLIMIT_MEMLOCK 8
+#define RLIMIT_AS      9
+#define RLIMIT_LOCKS   10
+#define RLIMIT_SIGPENDING 11
+#define RLIMIT_MSGQUEUE 12
+#define RLIMIT_NICE    13
+#define RLIMIT_RTPRIO  14
+#define RLIMIT_RTTIME  15
+#define RLIMIT_NLIMITS 16
+
+#define RLIM_NLIMITS RLIMIT_NLIMITS
+
+#endif

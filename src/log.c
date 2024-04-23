@@ -2231,10 +2231,24 @@ static inline void __do_send_log(struct log_target *target, struct log_header hd
 
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			_HA_ATOMIC_INC(&dropped_logs);
-		else if (!once) {
-			once = 1; /* note: no need for atomic ops here */
-			ha_alert("sendmsg()/writev() failed in logger #%d: %s (errno=%d)\n",
-					 nblogger, strerror(errno), errno);
+		else {
+#ifdef __wasi__
+			// We're getting an ENOTSUP error under WASIX. This is a temporary
+			// work-around so the logs are at least visible.
+			{
+				char *buf = (char*)malloc(size + 1);
+				memcpy((void*)buf, (void*)message, size);
+				buf[size] = 0;
+				printf("LOG: %s\n", buf);
+				free(buf);
+			}
+#endif
+
+			if (!once) {
+				once = 1; /* note: no need for atomic ops here */
+				ha_alert("sendmsg()/writev() failed in logger #%d: %s (errno=%d)\n",
+						nblogger, strerror(errno), errno);
+			}
 		}
 	}
 }

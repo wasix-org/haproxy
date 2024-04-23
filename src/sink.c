@@ -774,7 +774,9 @@ static void sink_free(struct sink *sink)
 			size_t size = (sink->ctx.ring->buf.size + 4095UL) & -4096UL;
 			void *area = (sink->ctx.ring->buf.area - sizeof(*sink->ctx.ring));
 
+#ifndef __wasi__
 			msync(area, size, MS_SYNC);
+#endif
 			munmap(area, size);
 			ha_free(&sink->store);
 		}

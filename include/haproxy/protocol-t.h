@@ -33,6 +33,10 @@ struct listener;
 struct receiver;
 struct connection;
 
+#ifdef __wasi__
+#define AF_MAX (AF_UNIX + 1)
+#endif
+
 /*
  * Custom network family for str2sa parsing.  Should be ok to do this since
  * sa_family_t is standardized as an unsigned integer
