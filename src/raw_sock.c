@@ -382,9 +382,14 @@ static size_t raw_sock_from_buf(struct connection *conn, void *xprt_ctx, const s
 		if (try > count)
 			try = count;
 
+#ifdef __wasi__
+		// Send flags not supported in WASI(X)
+		send_flag = 0;
+#else
 		send_flag = MSG_DONTWAIT | MSG_NOSIGNAL;
 		if (try < count || flags & CO_SFL_MSG_MORE)
 			send_flag |= MSG_MORE;
+#endif
 
 		ret = send(conn->handle.fd, b_peek(buf, done), try, send_flag);
 
@@ -406,6 +411,7 @@ static size_t raw_sock_from_buf(struct connection *conn, void *xprt_ctx, const s
 			break;
 		}
 		else if (errno != EINTR) {
+			perror("RAW socket send");
 			conn->flags |= CO_FL_ERROR | CO_FL_SOCK_RD_SH | CO_FL_SOCK_WR_SH;
 			break;
 		}
