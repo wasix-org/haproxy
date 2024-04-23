@@ -1,8 +1,10 @@
 #! /usr/bin/env sh
 
+# Note, the path to the scripts must be the same for both HAProxy and php-fpm,
+# otherwise php-fpm doesn't find the scripts; hence the weird mount location.
 wasmer run --net \
   --mapdir /conf:./examples \
-  --mapdir /app:/Users/arshia/repos/wasmer/php-local/wordpress-wasmer-starter/app \
+  --mapdir /Users/arshia/repos/wasmer/php-local/wordpress-wasmer-starter/app:/Users/arshia/repos/wasmer/php-local/wordpress-wasmer-starter/app \
   haproxy.wasm \
   -- \
   -f /conf/php-fpm-wasix.cfg \
