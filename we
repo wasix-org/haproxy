@@ -5,4 +5,5 @@ wasmer run --net \
   --mapdir /app:/Users/arshia/repos/wasmer/php-local/wordpress-wasmer-starter/app \
   haproxy.wasm \
   -- \
-  -f /conf/php-fpm-wasix.cfg
+  -f /conf/php-fpm-wasix.cfg \
+  $@
