@@ -2115,6 +2115,7 @@ static inline void __do_send_log(struct log_target *target, struct log_header hd
                                  int nblogger, size_t maxlen,
                                  char *message, size_t size)
 {
+#ifndef __wasi__
 	static THREAD_LOCAL struct iovec iovec[NB_LOG_HDR_MAX_ELEMENTS+1+1] = { }; /* header elements + message + LF */
 	static THREAD_LOCAL struct msghdr msghdr = {
 		//.msg_iov = iovec,
@@ -2126,14 +2127,27 @@ static inline void __do_send_log(struct log_target *target, struct log_header hd
 	int sent;
 	size_t nbelem;
 	struct ist *msg_header = NULL;
-
-	msghdr.msg_iov = iovec;
+#endif
 
 	/* historically some messages used to already contain the trailing LF
 	 * or Zero. Let's remove all trailing LF or Zero
 	 */
 	while (size && (message[size-1] == '\n' || (message[size-1] == 0)))
 		size--;
+
+#ifdef __wasi__
+	// We're getting an ENOTSUP error under WASIX. This is a temporary
+	// work-around so the logs are at least visible.
+	{
+		char *buf = (char*)malloc(size + 1);
+		memcpy((void*)buf, (void*)message, size);
+		buf[size] = 0;
+		printf("LOG: %s\n", buf);
+		free(buf);
+	}
+#else
+
+	msghdr.msg_iov = iovec;
 
 	if (target->type == LOG_TARGET_BUFFER) {
 		plogfd = NULL;
@@ -2232,17 +2246,6 @@ static inline void __do_send_log(struct log_target *target, struct log_header hd
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			_HA_ATOMIC_INC(&dropped_logs);
 		else {
-#ifdef __wasi__
-			// We're getting an ENOTSUP error under WASIX. This is a temporary
-			// work-around so the logs are at least visible.
-			{
-				char *buf = (char*)malloc(size + 1);
-				memcpy((void*)buf, (void*)message, size);
-				buf[size] = 0;
-				printf("LOG: %s\n", buf);
-				free(buf);
-			}
-#endif
 
 			if (!once) {
 				once = 1; /* note: no need for atomic ops here */
@@ -2251,6 +2254,7 @@ static inline void __do_send_log(struct log_target *target, struct log_header hd
 			}
 		}
 	}
+#endif
 }
 
 /* does the same as __do_send_log() does for a single target, but here the log
