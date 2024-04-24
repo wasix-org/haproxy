@@ -1,0 +1,17 @@
+[package]
+name = 'wasmer/haproxy'
+version = '2.9.0-pre01'
+description = 'HAProxy, ported to run on Wasmer and Edge.'
+license = 'GPL'
+readme = 'README.md'
+repository = 'https://github.com/wasix-org/haproxy/tree/wasix-2.9.0'
+entrypoint = 'haproxy'
+
+[[module]]
+name = 'haproxy'
+source = 'haproxy.wasm'
+abi = 'wasi'
+
+[[command]]
+name = 'haproxy'
+module = 'haproxy'
