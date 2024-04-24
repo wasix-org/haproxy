@@ -1,8 +1,14 @@
 # Port of HAProxy to WASIX
 
-Work in progress. Use the `wb` script to build, `we` to execute the resulting WASIX binary.
+To build the code, you need a working WASIX sysroot, which can be built from [the wasix-libc repo](https://github.com/wasix-org/wasix-libc).
 
-`we` uses the `examples/php-fpm-wasix.cfg` config, so have a php-fpm instance listening on 127.0.0.1:9000 for HAProxy to connect to.
+Once you have the sysroot, you can use the `wasix-build.sh` script to build the code. Provide the path to the sysroot using the `WASI_SYSROOT` env var, like so:
+
+```sh
+WASI_SYSROOT=/path/to/wasix-libc/sysroot ./wasix-build.sh
+```
+
+There is an exmaple for running HAProxy in front of php-fpm in `examples/php-fpm-in-wasix.sh` which shows the correct way to run HAProxy in Wasmer.
 
 # Original README
 
